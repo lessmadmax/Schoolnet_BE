@@ -20,12 +20,12 @@ public class CommentLikeService {
 
         if (existing.isPresent()) {
             CommentLike like = existing.get();
-            if (like.isLiked() == isLike) {  // ✅ getter 수정
+            if (like.isLiked() == isLike) {  // getter 수정
                 // 같은 버튼 다시 누르면 취소
                 commentLikeRepository.delete(like);
             } else {
                 // 반대 버튼 눌렀을 경우 변경
-                like.setLiked(isLike);      // ✅ setter 수정
+                like.setLiked(isLike);      // setter 수정
                 commentLikeRepository.save(like);
             }
         } else {
@@ -33,7 +33,7 @@ public class CommentLikeService {
             CommentLike newLike = new CommentLike();
             newLike.setComment(comment);
             newLike.setUser(user);
-            newLike.setLiked(isLike);       // ✅ setter 수정
+            newLike.setLiked(isLike);       // setter 수정
             commentLikeRepository.save(newLike);
         }
     }

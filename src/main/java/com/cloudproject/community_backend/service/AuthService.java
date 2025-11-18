@@ -20,14 +20,14 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     public String login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "존재하지 않는 이메일입니다."));
 
-        boolean matched = passwordEncoder.matches(request.password(), user.getPassword());
+        boolean matched = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!matched) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다.");
         }
-        return jwtUtil.generateToken(user.getEmail());
+        return jwtUtil.generateToken(user.getEmail(), user.getId());
 
             }
 }

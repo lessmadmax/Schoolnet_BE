@@ -38,8 +38,8 @@ public class Post {
     @JoinColumn(name = "author_id", referencedColumnName = "id")
     private User author;
 
-    @Column(name = "is_bad", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
-    private boolean isBad;
+    @Column(name = "is_bad", nullable = false)
+    private boolean isBad = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "board_type", nullable = false, length = 32)

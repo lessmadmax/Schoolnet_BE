@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "comments") // ✅ 테이블 이름 명시 (user, post와 충돌 방지)
+@Table(name = "comments") // 테이블 이름 명시 (user, post와 충돌 방지)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +20,7 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 500) // ✅ 글자수 제한
+    @Column(nullable = false, length = 500) // 글자수 제한
     private String content;
 
     @ManyToOne
@@ -37,8 +37,8 @@ public class Comment {
 
     private LocalDateTime createdAt = LocalDateTime.now(); // 기본값 현재시간
 
-    @Column(name = "is_bad", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
-    private boolean isBad;
+    @Column(name = "is_bad", nullable = false)
+    private boolean isBad = false;
 
     private String authorName;
 

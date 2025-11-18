@@ -1,0 +1,100 @@
+# ========================================
+# SchoolNet 백엔드 설정 파일 템플릿
+# ========================================
+#
+# 사용 방법:
+# 1. 이 파일을 복사하여 application.properties 파일 생성
+# 2. 아래 값들을 실제 값으로 변경
+# 3. application.properties는 .gitignore에 포함되어 Git에 업로드되지 않음
+#
+
+# ----------------------------------------
+# Server Configuration
+# ----------------------------------------
+server.port=8080
+
+# ----------------------------------------
+# Database Configuration
+# ----------------------------------------
+# 로컬 테스트용 H2 메모리 DB (개발용)
+spring.datasource.url=jdbc:h2:mem:schoolnet
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# H2 Console 활성화 (http://localhost:8080/h2-console)
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# 실제 배포용 MySQL 설정 (EC2 배포 시 사용)
+# spring.datasource.url=jdbc:mysql://localhost:3306/schoolnet?useSSL=false&serverTimezone=UTC
+# spring.datasource.username=YOUR_MYSQL_USERNAME
+# spring.datasource.password=YOUR_MYSQL_PASSWORD
+# spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# ----------------------------------------
+# JPA Configuration
+# ----------------------------------------
+# 개발용: create-drop (앱 종료 시 테이블 삭제)
+spring.jpa.hibernate.ddl-auto=create-drop
+
+# 배포용: update (테이블 유지, 자동 업데이트)
+# spring.jpa.hibernate.ddl-auto=update
+
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# H2 사용 시
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+
+# MySQL 사용 시
+# spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# ----------------------------------------
+# Gemini API Configuration
+# ----------------------------------------
+# 필수: Google Gemini API 키 입력
+# https://makersuite.google.com/app/apikey 에서 발급
+gemini.api.key=YOUR_GEMINI_API_KEY_HERE
+
+# ----------------------------------------
+# OCR Space API Configuration
+# ----------------------------------------
+# 필수: OCR Space API 키 입력
+# https://ocr.space/ocrapi 에서 무료 발급 가능
+ocr.space.api.key=YOUR_OCR_SPACE_API_KEY_HERE
+
+# ----------------------------------------
+# JWT Configuration
+# ----------------------------------------
+# 필수: 강력한 Secret Key로 변경 (최소 32자 이상 권장)
+# 온라인 생성기: https://randomkeygen.com/
+jwt.secret=CHANGE_THIS_TO_STRONG_SECRET_KEY_AT_LEAST_32_CHARACTERS_LONG
+jwt.expiration-millis=86400000
+
+# ----------------------------------------
+# Logging Configuration
+# ----------------------------------------
+logging.level.root=INFO
+logging.level.com.cloudproject.community_backend=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+
+# ----------------------------------------
+# Swagger Configuration
+# ----------------------------------------
+springdoc.api-docs.path=/api-docs
+springdoc.swagger-ui.path=/swagger-ui/index.html
+springdoc.swagger-ui.operations-sorter=method
+springdoc.swagger-ui.tags-sorter=alpha
+
+# ----------------------------------------
+# File Upload Configuration
+# ----------------------------------------
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+
+# ----------------------------------------
+# Security Configuration
+# ----------------------------------------
+# CORS 설정은 SecurityConfig.java에서 관리

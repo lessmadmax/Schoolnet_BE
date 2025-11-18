@@ -29,18 +29,11 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS 설정 추가
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-            .requestMatchers(
-                "/api/auth/**",
-                "/api/users/register",
-                "/v3/api-docs/**",
-                "/swagger-ui/**",
-                "/swagger-ui.html"
-            ).permitAll()
-            .anyRequest().authenticated() // ✅ JWT 유효하면 통과
-        );
+                .anyRequest().permitAll() // 임시: 모든 요청 허용 (테스트용)
+            );
 
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -53,11 +46,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-            "http://localhost:5173", // ✅ Vite dev server
+            "http://localhost:5173",
             "http://localhost:3000",
             "http://3.134.105.37"
         ));
- // 프론트 도메인
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true); // 인증정보 허용 (JWT 쿠키 or Authorization 헤더)

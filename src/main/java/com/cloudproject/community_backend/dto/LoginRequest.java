@@ -1,8 +1,13 @@
-
 package com.cloudproject.community_backend.dto;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-public record LoginRequest(
-    String email,
-    String password
-) {}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LoginRequest {
+    private String email;
+    private String password;
+}

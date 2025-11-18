@@ -41,12 +41,12 @@ public class JwtFilter extends OncePerRequestFilter {
             token = authHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(token);
-                System.out.println("✅ JWT username 추출 성공: " + username);
+                System.out.println("JWT username 추출 성공: " + username);
             } catch (Exception e) {
                 System.out.println("❌ JWT 파싱 실패: " + e.getMessage());
             }
         } else {
-            System.out.println("⚠️ Authorization 헤더 없음 또는 Bearer 형식 아님");
+            System.out.println("Authorization 헤더 없음 또는 Bearer 형식 아님");
         }
 
         System.out.println("🔹 username: " + username);
@@ -55,7 +55,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(token, username)) {
-                // ✅ 권한(Role) 완전히 제거
+                // 권한(Role) 완전히 제거
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -32,9 +32,22 @@ public class JwtUtil {
     public String generateToken(String username) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expirationMillis);
-    
+
         return Jwts.builder()
                 .setSubject(username)
+                .setIssuedAt(now)
+                .setExpiration(exp)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateToken(String username, Long userId) {
+        Date now = new Date();
+        Date exp = new Date(now.getTime() + expirationMillis);
+
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("userId", userId)
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -75,6 +88,16 @@ public class JwtUtil {
                 .getBody()
                 .getExpiration();
         return expiration.before(new Date());
+    }
+
+    // 토큰에서 userId 추출 (토큰에 저장된 경우)
+    public Long getUserIdFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", Long.class);
     }
 
 }

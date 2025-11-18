@@ -12,6 +12,6 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     // ❌ 잘못된 메서드
     // long countByPostAndLike(Post post, boolean like);
 
-    // ✅ 올바른 메서드
+    // 올바른 메서드
     long countByPostAndLiked(Post post, boolean liked);
 }
