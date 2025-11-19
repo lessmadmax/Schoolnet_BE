@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByBoardType(PostBoardType boardType);
+    long countByIsBad(boolean isBad);
 }

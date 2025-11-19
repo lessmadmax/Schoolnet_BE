@@ -1,5 +1,6 @@
 package com.cloudproject.community_backend.service;
 
+import com.cloudproject.community_backend.dto.DashboardStatsResponse;
 import com.cloudproject.community_backend.dto.ReportDetailResponse;
 import com.cloudproject.community_backend.entity.*;
 import com.cloudproject.community_backend.repository.*;
@@ -10,6 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 관리자 서비스
@@ -211,6 +216,86 @@ public class AdminService {
             .reviewNote(report.getReviewNote())
             .reviewerId(report.getReviewer() != null ? report.getReviewer().getId() : null)
             .reviewerUsername(report.getReviewer() != null ? report.getReviewer().getUsername() : null)
+            .build();
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardStatsResponse getDashboardStats() {
+        // 필터링 통계
+        long totalPosts = postRepository.count();
+        long blockedPosts = postRepository.countByIsBad(true);
+        double blockRate = totalPosts > 0 ? (blockedPosts * 100.0 / totalPosts) : 0;
+
+        long totalComments = commentRepository.count();
+        long blockedComments = commentRepository.countByIsBad(true);
+        double commentBlockRate = totalComments > 0 ? (blockedComments * 100.0 / totalComments) : 0;
+
+        DashboardStatsResponse.FilteringStats filteringStats = DashboardStatsResponse.FilteringStats.builder()
+            .totalPosts(totalPosts)
+            .blockedPosts(blockedPosts)
+            .blockRate(blockRate)
+            .totalComments(totalComments)
+            .blockedComments(blockedComments)
+            .commentBlockRate(commentBlockRate)
+            .build();
+
+        // 신고 통계
+        long totalReports = reportRepository.count();
+        long pendingReports = reportRepository.countByStatus(ReportStatus.PENDING);
+        long approvedReports = reportRepository.countByStatus(ReportStatus.APPROVED);
+        long rejectedReports = reportRepository.countByStatus(ReportStatus.REJECTED);
+        double approvalRate = (approvedReports + rejectedReports) > 0
+            ? (approvedReports * 100.0 / (approvedReports + rejectedReports)) : 0;
+
+        DashboardStatsResponse.ReportStats reportStats = DashboardStatsResponse.ReportStats.builder()
+            .totalReports(totalReports)
+            .pendingReports(pendingReports)
+            .approvedReports(approvedReports)
+            .rejectedReports(rejectedReports)
+            .approvalRate(approvalRate)
+            .build();
+
+        // 사용자 통계
+        long totalUsers = userRepository.count();
+        long studentUsers = userRepository.countByRole(UserRole.STUDENT);
+        long seniorVerifiedUsers = userRepository.countByIsSeniorVerified(true);
+        long adminUsers = userRepository.countByRole(UserRole.ADMIN);
+
+        List<User> allUsers = userRepository.findAll();
+        Map<String, Long> usersBySchool = allUsers.stream()
+            .collect(Collectors.groupingBy(
+                user -> user.getSchool() != null ? user.getSchool().getName() : "미인증",
+                Collectors.counting()
+            ));
+
+        DashboardStatsResponse.UserStats userStats = DashboardStatsResponse.UserStats.builder()
+            .totalUsers(totalUsers)
+            .studentUsers(studentUsers)
+            .seniorVerifiedUsers(seniorVerifiedUsers)
+            .adminUsers(adminUsers)
+            .usersBySchool(usersBySchool)
+            .build();
+
+        // 제재 통계
+        long totalPenalties = userPenaltyRepository.count();
+        long activePenalties = userPenaltyRepository.countByStatus(PenaltyStatus.ACTIVE);
+        long warnings = userPenaltyRepository.countByType(PenaltyType.WARNING);
+        long suspensions = userPenaltyRepository.countByType(PenaltyType.SUSPENSION);
+        long bans = userPenaltyRepository.countByType(PenaltyType.BAN);
+
+        DashboardStatsResponse.PenaltyStats penaltyStats = DashboardStatsResponse.PenaltyStats.builder()
+            .totalPenalties(totalPenalties)
+            .activePenalties(activePenalties)
+            .warnings(warnings)
+            .suspensions(suspensions)
+            .bans(bans)
+            .build();
+
+        return DashboardStatsResponse.builder()
+            .filteringStats(filteringStats)
+            .reportStats(reportStats)
+            .userStats(userStats)
+            .penaltyStats(penaltyStats)
             .build();
     }
 }

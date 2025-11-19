@@ -1,6 +1,7 @@
 package com.cloudproject.community_backend.controller;
 
 import com.cloudproject.community_backend.dto.ApiResponse;
+import com.cloudproject.community_backend.dto.DashboardStatsResponse;
 import com.cloudproject.community_backend.dto.ReportDetailResponse;
 import com.cloudproject.community_backend.dto.ReviewRequest;
 import com.cloudproject.community_backend.entity.ReportStatus;
@@ -153,6 +154,14 @@ public class AdminController {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "대시보드 통계 조회", description = "관리자 대시보드에 표시할 각종 통계 정보를 조회합니다")
+    public ResponseEntity<DashboardStatsResponse> getDashboardStats(HttpServletRequest request) {
+        verifyAdmin(request);
+        DashboardStatsResponse stats = adminService.getDashboardStats();
+        return ResponseEntity.ok(stats);
     }
 
     /**
