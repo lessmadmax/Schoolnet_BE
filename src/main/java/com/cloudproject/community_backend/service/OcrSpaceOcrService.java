@@ -107,21 +107,101 @@ public class OcrSpaceOcrService {
      */
     public boolean verifySchoolName(String inputSchoolName, MultipartFile studentCard) {
         String extracted = extractSchoolName(studentCard);
-    
+
         // OCR 실패 시 바로 false
         if (extracted.equals("인식 실패") || extracted.equals("에러 발생") || extracted.isEmpty()) {
             return false;
         }
-    
+
         // 공백 제거 + 대문자로 통일
         String normalizedExtracted = extracted.replaceAll("\\s+", "").toUpperCase();   // ex: KYUNGHEEUNIVERSITY
         String normalizedInput = inputSchoolName.replaceAll("\\s+", "").toUpperCase(); // ex: KYUNGHEE
-    
+
         System.out.println("입력값: " + normalizedInput + " / OCR값: " + normalizedExtracted);
-    
+
         // 조건1: OCR 결과가 입력값을 포함 (KYUNGHEE → KYUNGHEEUNIVERSITY)
         // 조건2: 입력값이 OCR 결과를 포함 (KYUNGHEEUNIVERSITY → KYUNGHEE)
         return normalizedExtracted.contains(normalizedInput) || normalizedInput.contains(normalizedExtracted);
     }
-    
+
+    /**
+     * 학생증에서 입학년도 추출
+     * @param studentCard 학생증 이미지
+     * @return 입학년도 (4자리 숫자, 예: 2022) 또는 null (인식 실패 시)
+     */
+    public Integer extractAdmissionYear(MultipartFile studentCard) {
+        try {
+            String originalExt;
+            String originalName = studentCard.getOriginalFilename();
+            if (originalName != null && originalName.contains(".")) {
+                originalExt = originalName.substring(originalName.lastIndexOf("."));
+            } else {
+                originalExt = ".png";
+            }
+
+            File tempFile = File.createTempFile("studentCard", originalExt);
+            studentCard.transferTo(tempFile);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("apikey", apiKey);
+            body.add("language", "eng");
+            body.add("file", new FileSystemResource(tempFile));
+
+            String response = webClient.post()
+                    .uri("/parse/image")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .header("apikey", apiKey)
+                    .body(BodyInserters.fromMultipartData(body))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .onErrorResume(e -> Mono.just("{\"ParsedResults\":[]}"))
+                    .block();
+
+            System.out.println("OCR 연도 추출 응답: " + response);
+
+            JsonNode root = objectMapper.readTree(response);
+            if (root.has("ParsedResults") && root.get("ParsedResults").isArray()) {
+                String parsedText = root.get("ParsedResults").get(0).get("ParsedText").asText();
+
+                // 4자리 연도 패턴 찾기 (2020-2030 범위)
+                java.util.regex.Pattern yearPattern = java.util.regex.Pattern.compile("(202[0-9]|203[0-9])");
+                java.util.regex.Matcher matcher = yearPattern.matcher(parsedText);
+
+                if (matcher.find()) {
+                    int year = Integer.parseInt(matcher.group(1));
+                    System.out.println("추출된 입학년도: " + year);
+                    return year;
+                }
+            }
+
+            tempFile.delete();
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 입학년도로부터 현재 학년 계산
+     * @param admissionYear 입학년도
+     * @return 학년 (1, 2, 3) 또는 null (유효하지 않은 경우)
+     */
+    public Integer calculateGradeFromYear(Integer admissionYear) {
+        if (admissionYear == null) {
+            return null;
+        }
+
+        int currentYear = java.time.Year.now().getValue();
+        int grade = currentYear - admissionYear + 1;
+
+        // 1~3학년만 유효
+        if (grade >= 1 && grade <= 3) {
+            return grade;
+        }
+
+        return null;
+    }
+
 }

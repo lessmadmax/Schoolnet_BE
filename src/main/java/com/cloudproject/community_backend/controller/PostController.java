@@ -43,6 +43,9 @@ public class PostController {
             @Schema(description = "게시판 구분", example = "TALK")
             PostBoardType boardType,
 
+            @Schema(description = "선배만 댓글 가능 여부", example = "false")
+            Boolean seniorOnlyComment,
+
             @Schema(description = "모임 게시글 세부 정보")
             MeetingInfo meetingInfo,
 

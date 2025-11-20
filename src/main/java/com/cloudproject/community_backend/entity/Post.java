@@ -55,6 +55,12 @@ public class Post {
     @JsonIgnoreProperties({"post", "hibernateLazyInitializer"})
     private QuestionPostDetail questionDetails;
 
+    /**
+     * 선배만 댓글 가능 여부
+     */
+    @Column(name = "senior_only_comment", nullable = false)
+    private boolean seniorOnlyComment = false;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 }
 

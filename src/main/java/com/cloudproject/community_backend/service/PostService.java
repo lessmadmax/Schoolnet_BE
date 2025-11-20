@@ -35,6 +35,11 @@ public class PostService {
 
         post.setBad(filterResult.isBlocked());
 
+        // 선배만 댓글 설정
+        if (request.seniorOnlyComment() != null) {
+            post.setSeniorOnlyComment(request.seniorOnlyComment());
+        }
+
         if (post.getBoardType() == PostBoardType.MEETING) {
             MeetingInfo meetingInfo = request.meetingInfo();
             if (meetingInfo == null) {

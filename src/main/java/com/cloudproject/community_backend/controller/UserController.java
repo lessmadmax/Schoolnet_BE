@@ -107,10 +107,10 @@ public class UserController {
     }
 
     /**
-     * 선배 인증
+     * 선배 인증 (수동 입력)
      */
     @PostMapping("/senior-verification")
-    @Operation(summary = "선배 인증", description = "2학년 이상 학생이 선배 인증을 진행합니다")
+    @Operation(summary = "선배 인증 (수동)", description = "2학년 이상 학생이 학년을 직접 입력해서 선배 인증을 진행합니다")
     public ResponseEntity<com.cloudproject.community_backend.dto.ApiResponse<Void>> verifySenior(
         @RequestBody @Valid SeniorVerificationRequest request,
         HttpServletRequest httpRequest
@@ -134,6 +134,60 @@ public class UserController {
 
         return ResponseEntity.ok(
             com.cloudproject.community_backend.dto.ApiResponse.success("선배 인증이 완료되었습니다")
+        );
+    }
+
+    /**
+     * 학생증 OCR 기반 선배 인증
+     */
+    @PostMapping(value = "/senior-verification/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "학생증 OCR 선배 인증", description = "학생증 이미지에서 입학년도를 추출하여 자동으로 선배 인증을 진행합니다")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "선배 인증 성공"),
+        @ApiResponse(responseCode = "400", description = "OCR 인식 실패 / 유효하지 않은 학년")
+    })
+    public ResponseEntity<com.cloudproject.community_backend.dto.ApiResponse<String>> verifySeniorWithOcr(
+        @RequestPart MultipartFile studentIdImage,
+        HttpServletRequest httpRequest
+    ) {
+        Long userId = getUserIdFromToken(httpRequest);
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+
+        // OCR로 입학년도 추출
+        Integer admissionYear = ocrSpaceOcrService.extractAdmissionYear(studentIdImage);
+        if (admissionYear == null) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(com.cloudproject.community_backend.dto.ApiResponse.error("학생증에서 입학년도를 인식할 수 없습니다. 다시 시도해주세요."));
+        }
+
+        // 입학년도로 학년 계산
+        Integer grade = ocrSpaceOcrService.calculateGradeFromYear(admissionYear);
+        if (grade == null || grade < 2) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(com.cloudproject.community_backend.dto.ApiResponse.error(
+                    "선배 인증은 2학년 이상만 가능합니다. 추출된 입학년도: " + admissionYear
+                ));
+        }
+
+        // 선배 인증 완료
+        user.setGrade(grade);
+        user.setIsSeniorVerified(true);
+        user.setSeniorVerifiedAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
+        System.out.println(String.format(
+            "OCR 선배 인증 완료 - 사용자: %s, 입학년도: %d, 학년: %d",
+            user.getUsername(), admissionYear, grade
+        ));
+
+        return ResponseEntity.ok(
+            com.cloudproject.community_backend.dto.ApiResponse.success(
+                String.format("선배 인증이 완료되었습니다. 학년: %d학년 (입학년도: %d)", grade, admissionYear)
+            )
         );
     }
 
