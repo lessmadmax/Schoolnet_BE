@@ -45,7 +45,17 @@ public class ContentFilterService {
                 .build();
         }
 
-        // Gemini API 호출
+        // 임시: Gemini API 비활성화 (성능 이슈)
+        // TODO: Redis 캐싱 추가 후 재활성화
+        return FilterResult.builder()
+            .isBlocked(false)
+            .category("정상")
+            .reason("기본 필터링 통과")
+            .confidence(0.5)
+            .build();
+
+        // Gemini API 호출 (현재 비활성화)
+        /*
         try {
             GeminiResponse response = callGeminiAPI(content);
             boolean isBlocked = response.isHarmful() && response.getConfidence() >= 0.7;
@@ -67,6 +77,7 @@ public class ContentFilterService {
                 .confidence(0.0)
                 .build();
         }
+        */
     }
 
     // 기본 욕설 사전 체크
@@ -129,6 +140,7 @@ public class ContentFilterService {
             ))
             .retrieve()
             .bodyToMono(String.class)
+            .timeout(java.time.Duration.ofSeconds(10))
             .block();
 
         return parseGeminiResponse(response);
