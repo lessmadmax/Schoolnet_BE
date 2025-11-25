@@ -46,6 +46,9 @@ public class PostController {
             @Schema(description = "선배만 댓글 가능 여부", example = "false")
             Boolean seniorOnlyComment,
 
+            @Schema(description = "익명 작성 여부", example = "false")
+            Boolean isAnonymous,
+
             @Schema(description = "모임 게시글 세부 정보")
             MeetingInfo meetingInfo,
 

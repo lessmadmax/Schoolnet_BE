@@ -25,14 +25,7 @@ public class CommentService {
         Post post = comment.getPost();
         User author = comment.getAuthor();
 
-        // 질문 게시판 체크 (기존 로직)
-        if (post != null && post.getBoardType() == PostBoardType.QUESTION) {
-            if (author.getIsSeniorVerified() == null || !author.getIsSeniorVerified()) {
-                throw new IllegalStateException("질문 게시판은 선배만 답변할 수 있습니다");
-            }
-        }
-
-        // 선배 전용 댓글 체크 (새로운 로직)
+        // 선배 전용 댓글 체크
         if (post != null && post.isSeniorOnlyComment()) {
             if (author.getIsSeniorVerified() == null || !author.getIsSeniorVerified()) {
                 throw new IllegalStateException("이 게시물은 선배만 댓글을 달 수 있습니다");
@@ -62,5 +55,9 @@ public class CommentService {
 
     public Iterable<Comment> getAllComments() {
         return commentRepository.findAll();
+    }
+
+    public List<Comment> getCommentsByPostId(Long postId) {
+        return commentRepository.findByPostId(postId);
     }
 }

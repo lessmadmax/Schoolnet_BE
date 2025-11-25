@@ -61,6 +61,18 @@ public class Post {
     @Column(name = "senior_only_comment", nullable = false)
     private boolean seniorOnlyComment = false;
 
+    /**
+     * 익명 작성 여부
+     */
+    @Column(name = "is_anonymous", nullable = false)
+    private boolean isAnonymous = false;
+
+    /**
+     * 익명 작성자 이름 (익명일 경우 "익명"으로 표시)
+     */
+    @Column(name = "author_display_name")
+    private String authorDisplayName;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 }
 

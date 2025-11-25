@@ -114,7 +114,7 @@ public class AdminService {
         report.setReviewedAt(LocalDateTime.now());
 
         System.out.println(String.format(
-            "❌ 신고 반려 - ID: %d, 검토자: %s",
+            "신고 반려 - ID: %d, 검토자: %s",
             reportId, admin.getUsername()
         ));
     }

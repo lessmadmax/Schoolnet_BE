@@ -40,6 +40,15 @@ public class PostService {
             post.setSeniorOnlyComment(request.seniorOnlyComment());
         }
 
+        // 익명 작성 설정
+        if (request.isAnonymous() != null && request.isAnonymous()) {
+            post.setAnonymous(true);
+            post.setAuthorDisplayName("익명");
+        } else {
+            post.setAnonymous(false);
+            post.setAuthorDisplayName(post.getAuthor().getUsername());
+        }
+
         if (post.getBoardType() == PostBoardType.MEETING) {
             MeetingInfo meetingInfo = request.meetingInfo();
             if (meetingInfo == null) {

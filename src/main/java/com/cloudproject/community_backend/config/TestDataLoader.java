@@ -24,6 +24,14 @@ public class TestDataLoader {
     @Profile("!prod")
     public CommandLineRunner loadTestData() {
         return args -> {
+            // 이미 데이터가 있으면 초기화 건너뛰기
+            if (userRepository.count() > 0) {
+                System.out.println("✅ 테스트 데이터가 이미 존재합니다. 초기화를 건너뜁니다.");
+                return;
+            }
+
+            System.out.println("📝 테스트 데이터 초기화 시작...");
+
             School testSchool = new School();
             testSchool.setName("서울중학교");
             schoolRepository.save(testSchool);

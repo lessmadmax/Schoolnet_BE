@@ -33,33 +33,23 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String username = null;
         String token = null;
-        System.out.println("🔹 요청 URL: " + request.getRequestURI());
-        System.out.println("🔹 Authorization 헤더: " + authHeader);
 
-        // Bearer 토큰 꺼내기
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(token);
-                System.out.println("JWT username 추출 성공: " + username);
             } catch (Exception e) {
-                System.out.println("❌ JWT 파싱 실패: " + e.getMessage());
+                // JWT parsing failed
             }
-        } else {
-            System.out.println("Authorization 헤더 없음 또는 Bearer 형식 아님");
         }
-
-        System.out.println("🔹 username: " + username);
-        System.out.println("🔹 token: " + token);
         
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(token, username)) {
-                // 권한(Role) 완전히 제거
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        
+
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }

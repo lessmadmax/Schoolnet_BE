@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import com.cloudproject.community_backend.dto.SeniorStatusResponse;
 import com.cloudproject.community_backend.dto.SeniorVerificationRequest;
+import com.cloudproject.community_backend.dto.RegisterRequest;
+import com.cloudproject.community_backend.dto.RegisterResponse;
 import com.cloudproject.community_backend.entity.School;
 import com.cloudproject.community_backend.entity.User;
 import com.cloudproject.community_backend.repository.SchoolRepository;
@@ -42,8 +44,58 @@ public class UserController {
     private final OcrSpaceOcrService ocrSpaceOcrService;
     private final JwtUtil jwtUtil;
     
+    /**
+     * 간단한 회원가입 (JSON)
+     */
+    @PostMapping("/register")
+    @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름, 학교 ID로 간단하게 회원가입합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원가입 성공"),
+            @ApiResponse(responseCode = "400", description = "중복 이메일 / 유효하지 않은 학교 ID")
+    })
+    public ResponseEntity<RegisterResponse> registerSimple(
+            @RequestBody @Valid RegisterRequest request
+    ) {
+        // 이메일 중복 체크
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다.");
+        }
+
+        // 학교 조회
+        School school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "유효하지 않은 학교 ID입니다."));
+
+        // 사용자 생성
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUsername(request.getName());
+        user.setSchool(school);
+        user.setGrade(null); // 학년은 나중에 선배 인증에서 설정
+        user.setIsSeniorVerified(false); // 기본적으로 선배 인증 안됨
+
+        User savedUser = userRepository.save(user);
+
+        // JWT 토큰 생성
+        String token = jwtUtil.generateToken(savedUser.getEmail(), savedUser.getId());
+
+        // 응답 생성
+        RegisterResponse response = new RegisterResponse(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                token,
+                savedUser.getIsSeniorVerified()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 학생증 OCR 기반 회원가입 (폐기 예정 또는 별도 기능으로 사용)
+     */
     @PostMapping(
-        value = "/register",
+        value = "/register-with-card",
         consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     @Operation(summary = "회원가입 (학생증 인증)", description = "학생증 인증을 통해 새로운 사용자를 등록합니다.")
@@ -78,12 +130,24 @@ public class UserController {
                     .body("학교 인증 실패. 입력한 학교명: " + schoolName + ", OCR 결과: " + recognizedSchool);
         }
 
-        System.out.println("OCR 반환 학교명: " + recognizedSchool);
+        // OCR로 입학년도 추출 및 학년 계산
+        Integer admissionYear = ocrSpaceOcrService.extractAdmissionYear(studentCard);
+        Integer grade = null;
+        boolean isSenior = false;
+
+        if (admissionYear != null) {
+            grade = ocrSpaceOcrService.calculateGradeFromYear(admissionYear);
+            if (grade != null && grade >= 2) {
+                isSenior = true;
+            }
+            System.out.println("OCR 입학년도: " + admissionYear + ", 계산된 학년: " + grade);
+        } else {
+            System.out.println("입학년도 추출 실패 - 학년 정보 없이 가입 진행");
+        }
 
         // DB에서 학교 조회 (없으면 생성)
         School school = schoolRepository.findByName(schoolName)
                 .orElseGet(() -> schoolRepository.save(new School(null, schoolName, null)));
-
 
         // 가입 진행
         User user = new User();
@@ -91,7 +155,26 @@ public class UserController {
         user.setPassword(passwordEncoder.encode(password));
         user.setUsername(username);
         user.setSchool(school);
-        return ResponseEntity.ok(userRepository.save(user));
+        user.setGrade(grade);
+        user.setIsSeniorVerified(isSenior);
+        if (isSenior) {
+            user.setSeniorVerifiedAt(java.time.LocalDateTime.now());
+        }
+
+        User savedUser = userRepository.save(user);
+
+        String message = "회원가입 완료!";
+        if (grade != null) {
+            message += " 학년: " + grade + "학년";
+            if (isSenior) {
+                message += " (선배 인증 완료)";
+            }
+        }
+
+        return ResponseEntity.ok(java.util.Map.of(
+            "user", savedUser,
+            "message", message
+        ));
     }
 
     @Operation(summary = "모든 사용자 조회", description = "등록된 모든 사용자를 조회합니다.")
@@ -150,13 +233,19 @@ public class UserController {
         @RequestPart MultipartFile studentIdImage,
         HttpServletRequest httpRequest
     ) {
+        System.out.println("=== OCR 선배 인증 요청 시작 ===");
+        System.out.println("파일명: " + studentIdImage.getOriginalFilename());
+        System.out.println("파일 크기: " + studentIdImage.getSize());
+
         Long userId = getUserIdFromToken(httpRequest);
+        System.out.println("사용자 ID: " + userId);
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"));
 
-        // OCR로 입학년도 추출
+        System.out.println("OCR 입학년도 추출 시작...");
         Integer admissionYear = ocrSpaceOcrService.extractAdmissionYear(studentIdImage);
+        System.out.println("추출된 입학년도: " + admissionYear);
         if (admissionYear == null) {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
