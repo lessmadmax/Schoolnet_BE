@@ -31,16 +31,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/auth/**",
-                    "/api/users/register",
-                    "/api/cloud/**",
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html"
-                ).permitAll()
-                .anyRequest().authenticated() // JWT 유효하면 통과
+            .authorizeHttpRequests(auth -> auth.
+                anyRequest().permitAll()
+                 // JWT 유효하면 통과
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
